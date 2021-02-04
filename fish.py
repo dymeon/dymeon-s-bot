@@ -33,8 +33,8 @@ async def on_ready():
 
 @client.event
 async def on_reaction_add(reaction, user):
-	#if(reaction.me):	#want to add $stats for checking emojis
-	await reaction.remove(client.user)	#should delete bot reactions if I react
+	if(user.id!=698220119783899206)#bot ID	#want to add $stats for checking emojis
+		await reaction.remove(client.user)	#should delete bot reactions if I react
 	#works on messages written while bot was working
 	#clear_reaction clears all reactions with that emoji, remove removes reaction from that user
 	
