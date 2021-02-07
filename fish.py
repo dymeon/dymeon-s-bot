@@ -1,6 +1,160 @@
 import discord
 import random
-import datetime
+from datetime import date
+import asyncio
+
+client = discord.Client()
+prefix = '$'
+fishin = ['Radical Fish','Bass','Salmon']
+fishers = []
+reactTime = date.today()
+reactings = [['Emojis'],[reactTime.isoformat()],[''],[''],[''],[''],['Total']]
+chans = [674679001582665728,701003097601867817]
+sdvig = 1
+channeru = None
+mesage = None
+reaktu = None
+IDlen = 18
+
+async def chanMsgDefiner(l,message):
+	global channeru
+	global mesage
+	spisok = []
+	state = 0
+	isWord = False
+	msgContent = False
+	wasContent = False
+	for i in range(len(l)):
+		if((l[i]=='"')and(not isWord)and(not wasContent))or(msgContent)or((l[i]!=' ')and(l[i]!='"')):
+			if(not isWord):
+				spisok.append('')
+				isWord = True
+			spisok[state] += l[i]
+			if(l[i]=='"'):
+				if(msgContent):
+					msgContent = False
+					wasContent = True
+					isWord = False
+					state +=1
+				else:
+					msgContent = True
+					isWord = True
+			elif(not isWord):
+				isWord = True
+		elif(l[i]==' ')and(isWord):
+			state += 1
+			isWord = False
+	#defining
+	channeruFound = -1
+	mesageFound = -1
+	for i in range(len(spisok)):
+		if(mesageFound==-1)and(spisok[i][0]=='"')and(spisok[i][-1]=='"'):
+			mesageFound = i
+			spisok[i] = spisok[i][1:-1]
+			print('Message set 1')
+		elif(len(spisok[i])>=IDlen)and(intCheck(spisok[i])):
+			if(client.get_channel(int(spisok[i]))!=None)and(channeruFound==-1):
+				channeruFound = i
+				print('Channel set 1')
+			elif(mesageFound==-1):
+				mesageFound = i
+				print('Message set 2')
+		elif(spisok[i][:2]=='<#')and(spisok[i][-1]=='>')and(intCheck(spisok[i][2:-1]))and(len(spisok[i][2:-1])>=IDlen)and(channeruFound==-1):
+			channeruFound = i
+			spisok[i] = spisok[i][2:-1]
+			print('Channel set 2')
+		elif(spisok[i][:3]=='<@!')and(spisok[i][-1]=='>')and(intCheck(spisok[i][3:-1]))and(len(spisok[i][3:-1])>=IDlen)and(mesageFound==-1):
+			mesageFound = i
+			print('Message set 3')
+		elif(channeruFound==-1):
+			chan = None
+			for j in client.get_all_channels():
+				if j.name==spisok[i]:
+					chan = j
+					break
+			if(chan!=None):
+				channeruFound = i
+				print('Channel set 3')
+			elif(mesageFound==-1):
+				mesageFound = i
+				print('Message set 4')
+			else:
+				spisok.append('])])])])])])])])])])])])])])])])])])])])')
+				channeruFound = len(spisok)-1
+				mesageFound = len(spisok)-1
+				print('Unable to set 1')
+				break
+		elif(mesageFound==-1):
+			mesageFound = i
+			print('Message set 5')
+		else:
+			spisok.append('])])])])])])])])])])])])])])])])])])])])')
+			channeruFound = len(spisok)-1
+			mesageFound = len(spisok)-1
+			print('Unable to set 2')
+			breakchanneruStr = ''
+	#defining what string where to put
+	channeruStr = ''
+	mesageStr = ''
+	if(channeruFound!=-1):
+		channeruStr = spisok[channeruFound]
+	if(mesageFound!=-1):
+		mesageStr = spisok[mesageFound]
+	#setting 'Str's
+	if(channeruStr!='')and(intCheck(channeruStr))and(len(channeruStr)>=IDlen):
+		channeru = await client.fetch_channel(int(channeruStr))
+	elif(channeruStr!=''):
+		channeru = None
+		for chanel in client.get_all_channels():
+			if chanel.name==channeruStr:
+				channeru = await client.fetch_channel(chanel.id)
+				break
+	if(channeru==None):
+		channeru = message.channel
+	#channels are OK
+	if(mesageStr!='')and(intCheck(mesageStr))and(len(mesageStr)>=IDlen):
+		mesage = await channeru.fetch_message(int(mesageStr))
+		if(mesage==None):
+			yuzeru = discord.utils.get(channeru.guild.members,name=mesageStr)
+			if(yuzeru==None):
+				yuzeru = discord.utils.get(channeru.guild.members,nick=mesageStr)
+			if(yuzeru!=None):
+				for mesej in channeru.history(limit=100):
+					if(mesej.author.id==yuzeru.id)and(mesej.channel==channeru)and(mesej!=message):
+						mesage = mesej
+						break
+	elif(mesageStr[:3]=='<@!')and(mesageStr[-1]=='>')and(intCheck(mesageStr[3:-1]))and(len(mesageStr[3:-1])>=IDlen):
+		yuzeru = discord.utils.get(channeru.guild.members,name=mesageStr[3:-1])
+		if(yuzeru!=None):
+			for mesej in channeru.history(limit=100):
+				if(mesej.author.id==yuzeru.id)and(mesej.channel==channeru)and(mesej.id!=message.id):
+					mesage = mesej
+					break
+		else:
+			mesage = None
+	elif(mesageStr!=''):
+		mesage = None
+		async for msg in channeru.history(limit=100):
+			if(mesageStr in msg.content)and(msg.id!=message.id):
+				mesage = msg
+				break
+		if(mesage==None):
+			yuzeru = discord.utils.get(channeru.guild.members,name=mesageStr)
+			if(yuzeru==None):
+				yuzeru = discord.utils.get(channeru.guild.members,nick=mesageStr)
+			if(yuzeru!=None):
+				for mesej in channeru.history(limit=100):
+					if(mesej.author.id==yuzeru.id)and(mesej.channel==channeru)and(mesej.id!=message.id):
+						mesage = mesej
+						break
+	else:
+		async for msg in channeru.history(limit=100):
+			if(msg.id!=message.id):
+				mesage = msg
+				break
+	if(mesage==None):
+		mesage = channeru.last_message
+	#messages are OK,needs testing after thousands of messages
 
 def intCheck(s):
 	b = True
@@ -10,15 +164,17 @@ def intCheck(s):
 			break
 	return b
 
-client = discord.Client()
-prefix = '$'
-fishin = ['Radical Fish','Bass','Salmon']
-fishers = []
-sdvig = 1
-channeru = None
-mesage = None
-reaktu = None 
-IDlen = 18
+def timeUpd():
+	global reactings
+	global reactTime
+	nowTime = date.today()
+	if(reactTime.isoformat()!=nowTime.isoformat()):
+		for i in range(4,1,-1):
+			reactings[i+1]=reactings[i]
+		reactings[1][0] = nowTime.isoformat()
+		for i in range(1,len(reactings[1])):
+			reactings[1][i] = 0
+		reactTime = nowTime
 
 @client.event
 async def on_ready():
@@ -29,45 +185,81 @@ async def on_ready():
 	mesage = channeru.last_message
 	reaktu = discord.utils.get(client.emojis, id=746762370864513075)
 	print('We have logged in as {0.user}'.format(client))
-	
 
 @client.event
-async def on_reaction_add(reaction, user):
-	#if(reaction.me):	#want to add $stats for checking emojis
-	await reaction.remove(client.user)	#should delete bot reactions if I react
+async def on_raw_reaction_add(payload):
+	chan = client.get_channel(payload.channel_id)
+	msg = await chan.fetch_message(payload.message_id)
+	if(payload.user_id!=client.user.id)and(discord.utils.get(msg.reactions,emoji=payload.emoji,me=True)!=None):	#want to add $stats for checking emojis
+		await msg.remove_reaction(payload.emoji,client.user)
+	else:
+		timeUpd()
+		reakt = payload.emoji
+		i = 0
+		for i in range(1,len(reactings[0])):
+			if(reactings[0][i]=='<:'+reakt.name+':'+str(reakt.id)+'>'):
+				reactings[1][i] += 1
+				reactings[6][i] += 1
+				break
+		if(reactings[0][i]!='<:'+reakt.name+':'+str(reakt.id)+'>')and(discord.utils.get(client.emojis,id=reakt.id)!=None):
+			reactings[0].append('<:'+reakt.name+':'+str(reakt.id)+'>')
+			reactings[1].append(1)
+			for j in range(2,6):
+				reactings[j].append(0)
+			reactings[6].append(1)
 	#works on messages written while bot was working
 	#clear_reaction clears all reactions with that emoji, remove removes reaction from that user
 	
 @client.event
+async def on_raw_reaction_remove(payload):
+	if(payload.user_id!=client.user.id):
+		timeUpd()
+		reakt = payload.emoji
+		for i in range(1,len(reactings[0])):
+			if(reactings[0][i]=='<:'+reakt.name+':'+str(reakt.id)+'>'):
+				reactings[1][i] -= 1
+				reactings[6][i] -= 1
+				break
+
+@client.event
 async def on_message(message):
+	global prefix
+	global channeru
+	global mesage
+	global reaktu
 	if message.author == client.user:
 		return
 	
-	if (message.channel.id==674679001582665728)or(message.channel.id==701003097601867817):#for using by me for only my purposes.edit:for using in special places for that
+	if(message.channel.id in chans):#needs reworking to be able to do it on other servers
 		if message.content.startswith(prefix):
-			if message.content.startswith(prefix+'hello'):	#no one uses it,used for test
+			if message.content.startswith(prefix+'hello'):		#no one uses it,used for test
 				await message.channel.send('Hello!')
-			elif message.content.startswith(prefix+'print'):
-				await message.channel.send('```'+message.conten[6:]t+'```')
-			elif message.content.startswith(prefix+'fish'):	#no one uses it
+			elif message.content.startswith(prefix+'print'):	#no one uses it,used for test
+				await message.channel.send('```'+message.conten[len(prefix+'print'):]+'```')
+			elif message.content.startswith(prefix+'update'):
+				print(reactTime.isoformat())
+				l=''
+				for i in range(len(reactings[0])):
+					for j in range(6):
+						l += str(reactings[j][i])+' '
+					l += '\n'
+				await message.channel.send(l)
+				timeUpd()
+			elif message.content.startswith(prefix+'fish'):		#no one uses it#add time if it'll be used
 				i = 0
 				if len(fishers)!=0:
 					for i in range(len(fishers)):
 						if fishers[i][0] == message.author.id:
 							break
 					if fishers[i][0] != message.author.id:
-						fishers.append([message.author.id,0,0,0]) #,(datetime.date.year*365+datetime.date.month*31+datetime.date.day)*24+datetime.time.hour+6
+						fishers.append([message.author.id,0,0,0])
 						i += 1
 				else:
-					fishers.append([message.author.id,0,0,0])#,(datetime.date.year*365+datetime.date.month*31+datetime.date.day)*24+datetime.time.hour+6
-			#	if (fishers[i][1]<(time.datetime.date.year*365+time.datetime.date.month*31+time.datetime.day)*24+datetime.time.hour):
+					fishers.append([message.author.id,0,0,0])
 					f1 = random.randint(0,3)
 					await message.channel.send("You caught "+fishin[f1]+", now you have "+str(fishers[i][f1+sdvig]+1)+" of them")
 					fishers[i][f1+sdvig] += 1
-			#		fishers[i][1] = (datetime.date.year*365+datetime.date.month*31+datetime.date.day)*24+datetime.time.hour+6
-			#	else:
-			#		await message.channel.send("Don't hurry, wait "+str(fishers[i][1]-(datetime.date.year*365+datetime.date.month*31+datetime.day)*24+datetime.time.hour)+" hours")
-			elif message.content.startswith(prefix+'inv'):	#no one uses it
+			elif message.content.startswith(prefix+'inv'):		#no one uses it
 				if len(fishers) == 0:
 					await message.channel.send("No one here has any fish")
 				else:
@@ -81,19 +273,26 @@ async def on_message(message):
 						await message.channel.send(l)
 					else:
 						await message.channel.send("It seems you haven't caught any fish. Use 'fish' command to catch your first")
-			#elif message.content.startswith(prefix+'newprefix'):
-			#	await message.channel.send("Set new prefix:")
-			#	prefix = str(input())
-			elif message.content.startswith(prefix+'react'):	#reworked:you can set channel,message, emoji in any order:
+			elif message.content.startswith(prefix+'newprefix'):
+				if(message.author.id==354685453372358656):
+					prefx = (message.content[len(prefix+'newprefix '):])
+					for i in range(len(prefx)):
+						if prefx[i]==' ':
+							prefx = prefx[:i]+prefx[i+1:]
+					if prefx!='':
+						prefix = prefx
+						await message.channel.send('New prefix:'+prefix)
+					else:
+						await message.channel.send("Can't set empty prefix")
+				else:
+					await message.channel.send("You're not allowed to change prefix")
+			elif message.content.startswith(prefix+'react'):	#you can set channel,message,emoji in any order:
 			#channel:id,name,mention,last used channel(empty),channel where message was sent(error)
 			#message:id,content,"content",sender id,sender name,sender nick,sender ping,pre-last message(empty or error)
 			#emoji:id,name,using emoji,previous emoji(empty),error emoji(i cant put yer dumb emoji)
-				global channeru
-				global mesage
-				global reaktu
 				l = ''
-				if len(message.content)>7:
-					l = message.content[6:]
+				if len(message.content)>len(prefix+'react'):
+					l = message.content[len(prefix+'react'):]
 				spisok = []
 				state = 0
 				isWord = False
@@ -205,43 +404,45 @@ async def on_message(message):
 				if(mesageStr!='')and(intCheck(mesageStr))and(len(mesageStr)>=IDlen):
 					mesage = await channeru.fetch_message(int(mesageStr))
 					if(mesage==None):
-						yuzeru = discord.utils.get(message.guild.members,name=mesageStr)
+						yuzeru = discord.utils.get(channeru.guild.members,name=mesageStr)
 						if(yuzeru==None):
-							yuzeru = discord.utils.get(message.guild.members,nick=mesageStr)
+							yuzeru = discord.utils.get(channeru.guild.members,nick=mesageStr)
 						if(yuzeru!=None):
-							for i in range(len(client.cached_messages)-1,0,-1):
-								if(client.cached_messages[i].user.id==yuzeru.id)and(client.cached_messages[i].channel==channeru)and(client.cached_messages[i]!=message):
-									mesage = client.cached_messages[i]
+							for mesej in channeru.history(limit=100):
+								if(mesej.author.id==yuzeru.id)and(mesej.channel==channeru)and(mesej.id!=message.id):
+									mesage = mesej
 									break
 				elif(mesageStr[:3]=='<@!')and(mesageStr[-1]=='>')and(intCheck(mesageStr[3:-1]))and(len(mesageStr[3:-1])>=IDlen):
-					yuzeru = discord.utils.get(message.guild.members,name=mesageStr[3:-1])
+					yuzeru = discord.utils.get(channeru.guild.members,name=mesageStr[3:-1])
 					if(yuzeru!=None):
-						for i in range(len(client.cached_messages)-1,0,-1):
-							if(client.cached_messages[i].user.id==yuzeru.id)and(client.cached_messages[i].channel==channeru)and(client.cached_messages[i]!=message):
-								mesage = client.cached_messages[i]
+						for mesej in channeru.history(limit=100):
+							if(mesej.author.id==yuzeru.id)and(mesej.channel==channeru)and(mesej.id!=message.id):
+								mesage = mesej
 								break
 					else:
 						mesage = None
 				elif(mesageStr!=''):
 					mesage = None
-					for i in range(len(client.cached_messages)-1,0,-1):
-						if(client.cached_messages[i].channel==channeru)and(mesageStr in client.cached_messages[i].content)and(client.cached_messages[i]!=message):
-							mesage = await channeru.fetch_message(client.cached_messages[i].id)
+					async for msg in channeru.history(limit=100):
+						if(mesageStr in msg.content)and(msg.id!=message.id):
+							mesage = msg
 							break
 					if(mesage==None):
-						yuzeru = discord.utils.get(message.guild.members,name=mesageStr)
+						yuzeru = discord.utils.get(channeru.guild.members,name=mesageStr)
 						if(yuzeru==None):
-							yuzeru = discord.utils.get(message.guild.members,nick=mesageStr)
+							yuzeru = discord.utils.get(channeru.guild.members,nick=mesageStr)
 						if(yuzeru!=None):
-							for i in range(len(client.cached_messages)-1,0,-1):
-								if(client.cached_messages[i].user.id==yuzeru.id)and(client.cached_messages[i].channel==channeru)and(client.cached_messages[i]!=message):
-									mesage = client.cached_messages[i]
+							for mesej in channeru.history(limit=100):
+								if(mesej.author.id==yuzeru.id)and(mesej.channel==channeru)and(mesej.id!=message.id):
+									mesage = mesej
 									break
-				if(mesageStr=='')or(mesage==None):
-					for i in range(len(client.cached_messages)-1,0,-1):
-						if(client.cached_messages[i]!=message)and(client.cached_messages[i].channel==channeru):
-							mesage = await channeru.fetch_message(client.cached_messages[i].id)
+				else:
+					async for msg in channeru.history(limit=100):
+						if(msg.id!=message.id):
+							mesage = msg
 							break
+				if(mesage==None):
+					mesage = channeru.last_message
 				#messages are OK,needs testing after thousands of messages
 				if(reaktuStr!='')and(intCheck(reaktuStr))and(len(reaktuStr)>=IDlen):
 					reaktu = discord.utils.get(client.emojis, id=int(reaktuStr))
@@ -262,9 +463,30 @@ async def on_message(message):
 					reaktu = discord.utils.get(client.emojis, id=747176918406791199)
 				#reactions are almost OK,but can't send non-custom emojis
 				await mesage.add_reaction(reaktu)
-			elif message.content.startswith(prefix+'emojisy'):	#rework this command:bad design
-				for i in range(len(client.emojis)):
-					await message.channel.send(client.emojis[i].name+' '+str(client.emojis[i].id)+' '+client.get_guild(client.emojis[i].guild_id).name)
+			elif message.content.startswith(prefix+'emojisy'):
+				emb = discord.Embed(title='Emoji and Bot Usage Statistics')
+				for i in range(2):
+					head = ''+str(reactings[i][0])
+					if(head==''):
+						head = '-'
+					l = """"""
+					for j in range(1,len(reactings[0])):
+						add = str(reactings[i][j])
+						l = """{0}\n{1}""".format(l,add)
+					if(l==""""""):
+						l = """-"""
+					emb.add_field(name=head,value=l)
+				head = ''+str(reactings[6][0])
+				if(head==''):
+					head = '-'
+				l = """"""
+				for j in range(1,len(reactings[0])):
+					add = str(reactings[6][j])
+					l = """{0}\n{1}""".format(l,add)
+				if(l==""""""):
+					l = """-"""
+				emb.add_field(name=head,value=l)
+				await message.channel.send(embed=emb)
 			elif message.content.startswith(prefix+'version'):	#doesn't work for unknown reason
 				l = discord.__version__							#don't need this command,can add in any moment
 				await message.channel.send(l)
@@ -386,7 +608,7 @@ async def on_message(message):
 								l=l+lab[i][j]
 					l=l+'\n'
 				await message.channel.send(l)
-			elif message.content.startswith(prefix+'exit'):		#useful for quit,doesn't need reworking
+			elif message.content.startswith(prefix+'exit'):		#useful for quit,needs reworking to save stats
 				await client.logout()
 				print("Bot has been logged out")
 			elif message.content.startswith(prefix+'hawaii'):	#autoreact fish-bag-goto-palm
@@ -394,35 +616,154 @@ async def on_message(message):
 			#	746762370864513075-bag
 			#	671416950341238795-goto
 			#	752218210555658381-palm
-				channeruId = int(message.content[8:26])	#see $react
-				mesageId = int(message.content[27:45])
-				channeru = client.get_channel(channeruId)
-				mesage = await channeru.fetch_message(mesageId)
+				l = ''
+				if len(message.content)>len(prefix+'hawaii'):
+					l = message.content[len(prefix+'hawaii'):]
+				await chanMsgDefiner(l,message)
 				await mesage.add_reaction(discord.utils.get(client.emojis, id=671827822607859712))
 				await mesage.add_reaction(discord.utils.get(client.emojis, id=746762370864513075))
 				await mesage.add_reaction(discord.utils.get(client.emojis, id=671416950341238795))
 				await mesage.add_reaction(discord.utils.get(client.emojis, id=752218210555658381))
 			elif message.content.startswith(prefix+'durka'):	#autoreact SanEatar-goto-durka
 			#	759483429602459648-SanEatar
-				channeruId = int(message.content[7:25])	#see $react, but -1 to positions
-				mesageId = int(message.content[26:44])
-				channeru = client.get_channel(channeruId)
-				mesage = await channeru.fetch_message(mesageId)
+				l = ''
+				if len(message.content)>len(prefix+'durka'):
+					l = message.content[len(prefix+'durka'):]
+				await chanMsgDefiner(l,message)
 				await mesage.add_reaction(discord.utils.get(client.emojis, id=759483429602459648))
 				await mesage.add_reaction(discord.utils.get(client.emojis, id=671416950341238795))
 				await mesage.add_reaction('🏥')	#yeah,it's how it works
 			elif message.content.startswith(prefix+'lefter'):	#autoreact pointAtAvatar-goto-fire
 			#	764223528492204083-SanCheeseTam2
-				channeruId = int(message.content[8:26])	#see $react
-				mesageId = int(message.content[27:45])
-				channeru = client.get_channel(channeruId)
-				mesage = await channeru.fetch_message(mesageId)
+				l = ''
+				if len(message.content)>len(prefix+'lefter'):
+					l = message.content[len(prefix+'lefter'):]
+				await chanMsgDefiner(l,message)
 				await mesage.add_reaction(discord.utils.get(client.emojis, id=764223528492204083))
 				await mesage.add_reaction(discord.utils.get(client.emojis, id=671416950341238795))
 				await mesage.add_reaction('🔥')	#yeah,it's how it works
-#			else:
-#				await message.channel.send("Try another commands\n'hello' - bot will say hello in respond\n'fish' - here you can fish\n'inv' - shows your fish")
+	if(message.content.startswith(prefix+'addchan'))and(message.author.guild_permissions.administrator):
+		s = message.content[len(prefix+'addchan'):]
+		spisok = []
+		isWord = False
+		i = 0
+		for l in s:
+			if(l!=' ')and(not isWord):
+				spisok.append(l)
+				isWord = True
+			elif(l==' ')and(isWord):
+				i += 1
+				isWord = False
+			elif(isWord):
+				spisok[i] += l
+		#defining identificators
+		if(len(spisok)>0):
+			if(spisok[0]=='#all'):
+				for chan in message.guild.channels:
+					if(not chan.id in chans):
+						chans.append(chan.id)
+			else:
+				errorAdd = False
+				l = ''
+				for channeruStr in spisok:
+					channeru = None
+					if(intCheck(channeruStr))and(len(channeruStr)>=IDlen):
+						channeru = await client.fetch_channel(int(channeruStr))
+					elif(channeruStr!=''):
+						channeru = None
+						for chanel in message.guild.channels:
+							if chanel.name==channeruStr:
+								channeru = await client.fetch_channel(chanel.id)
+								break
+					if(channeru==None):
+						errorAdd = True
+					else:
+						if(not channeru.id in chans):
+							chans.append(channeru.id)
+							l += channeru.name+' '
+				if(errorAdd):
+					await message.channel.send("""Added channels {0}\nThere was problem with adding some channels""".format(l))
+				elif(l!=''):
+					await message.channel.send('Added channels {0}'.format(l))
+				else:
+					await message.channel.send('It seems that channels you wanted to add were already added to list of channels for commands')
+		else:
+			if(not message.channel.id in chans):
+				chans.append(message.channel.id)
+				await message.channel.send('Added channel '+message.channel.name)
+			else:
+				await message.channel.send('It seems that this channel was already added to list of channels for commands')
+	elif(message.content.startswith(prefix+'removechan'))and(message.author.guild_permissions.administrator):
+		s = message.content[len(prefix+'removechan'):]
+		spisok = []
+		isWord = False
+		i = 0
+		for l in s:
+			if(l!=' ')and(not isWord):
+				spisok.append(l)
+				isWord = True
+			elif(l==' ')and(isWord):
+				i += 1
+				isWord = False
+			elif(isWord):
+				spisok[i] += l
+		#defining identificators
+		if(len(spisok)>0):
+			if(spisok[0]=='#all'):
+				for chan in message.guild.channels:
+					if(chan.id in chans):
+						chans.remove(chan.id)
+			else:
+				errorAdd = False
+				l = ''
+				for channeruStr in spisok:
+					channeru = None
+					if(intCheck(channeruStr))and(len(channeruStr)>=IDlen):
+						channeru = await client.fetch_channel(int(channeruStr))
+					elif(channeruStr!=''):
+						channeru = None
+						for chanel in message.guild.channels:
+							if chanel.name==channeruStr:
+								channeru = await client.fetch_channel(chanel.id)
+								break
+					if(channeru==None):
+						errorAdd = True
+					else:
+						if(channeru.id in chans):
+							chans.remove(channeru.id)
+							l += channeru.name+' '
+				if(errorAdd):
+					await message.channel.send("""Removed channels {0}\nThere was problem with removing some channels""".format(l))
+				elif(l!=''):
+					await message.channel.send('Removed channels {0}'.format(l))
+				else:
+					await message.channel.send('It seems that channels you wanted to remove were already removed from list of channels for commands')
+		else:
+			if(message.channel.id in chans):
+				chans.remove(message.channel.id)
+				await message.channel.send('Removed channel '+message.channel.name)
+			else:
+				await message.channel.send('It seems that this channel was already removed from list of channels for commands')
+
+	if(not message.channel.id in chans)or(not message.content.startswith(prefix)):
+		timeUpd()										#rework:time commands not working
+		for emozi in client.emojis:
+			s = '<:'+emozi.name+':'+str(emozi.id)+'>'
+			if(s in message.content):
+				i = 0
+				for i in range(1,len(reactings[0])):
+					if(reactings[0][i]==s):
+						reactings[1][i] += 1
+						reactings[6][i] += 1
+						break
+				if(reactings[0][i]!=s)and(emozi.available):
+					reactings[0].append(s)
+					reactings[1].append(1)
+					for j in range(2,6):
+						reactings[j].append(0)
+					reactings[6].append(1)
+	#			await message.channel.send("Try another commands\n'hello' - bot will say hello in respond\n'fish' - here you can fish\n'inv' - shows your fish")
 #		else:
 #			await message.channel.send("Shhh! Don't frighten off fish!")
-client.run('No token for you, use your own')
+client.run('use your token, not mine')
 #TODO:labyrinth generator(almost done)(needs reworking),ASCII Art maker(not there),description generator(maybe not there),emojis in messages and reacts of last messages counter,based on that stats,help about my bot
